@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-
-        <import type="android.view.View" />
-
-        <import type="org.proninyaroslav.libretorrent.ui.createtorrent.CreateTorrentViewModel" />
 
         <variable
             name="viewModel"
@@ -32,16 +27,6 @@
                 android:layout_height="wrap_content"
                 app:navigationIcon="@drawable/abc_ic_ab_back_material"
                 app:title="@string/create_torrent" />
-
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/creating_progress"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:progress="@{viewModel.buildProgress.intValue()}"
-                android:visibility="@{viewModel.state.status == CreateTorrentViewModel.BuildState.Status.BUILDING ? View.VISIBLE : View.GONE}"
-                tools:progress="25"
-                tools:visibility="visible" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.core.widget.NestedScrollView
