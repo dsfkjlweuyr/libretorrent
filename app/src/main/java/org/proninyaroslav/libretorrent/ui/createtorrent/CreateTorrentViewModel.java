@@ -158,7 +158,10 @@ public class CreateTorrentViewModel extends AndroidViewModel {
         disposables.add(builder.observeProgress()
                 .subscribeOn(Schedulers.io())
                 .filter(Objects::nonNull)
-                .subscribe(this::makePercentProgress)
+                .subscribe(
+                        this::makePercentProgress,
+                        (err) -> Log.e(TAG, Log.getStackTraceString(err))
+                )
         );
         disposables.add(builder.build()
                 .subscribeOn(Schedulers.io())
@@ -235,7 +238,12 @@ public class CreateTorrentViewModel extends AndroidViewModel {
     }
 
     private void makePercentProgress(TorrentBuilder.Progress progress) {
-        buildProgress.postValue((int) (progress.piece() * 100.0) / progress.numPieces());
+        int numPieces = progress.numPieces();
+        if (numPieces <= 0) {
+            return;
+        }
+        int percent = (int) ((progress.piece() * 100.0) / numPieces);
+        buildProgress.postValue(Math.max(0, Math.min(100, percent)));
     }
 
     private void resetPercentProgress() {

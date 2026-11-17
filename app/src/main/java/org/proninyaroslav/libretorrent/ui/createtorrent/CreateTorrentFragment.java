@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.databinding.DataBindingUtil;
@@ -48,12 +49,14 @@ import org.proninyaroslav.libretorrent.R;
 import org.proninyaroslav.libretorrent.core.exception.UnknownUriException;
 import org.proninyaroslav.libretorrent.core.utils.Utils;
 import org.proninyaroslav.libretorrent.core.utils.WindowInsetsSide;
+import org.proninyaroslav.libretorrent.databinding.DialogCreatingTorrentBinding;
 import org.proninyaroslav.libretorrent.databinding.FragmentCreateTorrentBinding;
 import org.proninyaroslav.libretorrent.ui.filemanager.FileManagerConfig;
 import org.proninyaroslav.libretorrent.ui.filemanager.FileManagerFragment;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Locale;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -67,6 +70,8 @@ public class CreateTorrentFragment extends Fragment {
     private AppCompatActivity activity;
     private CreateTorrentViewModel viewModel;
     private FragmentCreateTorrentBinding binding;
+    private AlertDialog creatingDialog;
+    private DialogCreatingTorrentBinding creatingDialogBinding;
     private final CompositeDisposable disposables = new CompositeDisposable();
 
     @Override
@@ -124,6 +129,13 @@ public class CreateTorrentFragment extends Fragment {
         disposables.clear();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
+        dismissCreatingDialog();
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -136,6 +148,7 @@ public class CreateTorrentFragment extends Fragment {
 
         binding = DataBindingUtil.inflate(getLayoutInflater(), R.layout.fragment_create_torrent, null, false);
         binding.setViewModel(viewModel);
+        binding.setLifecycleOwner(getViewLifecycleOwner());
 
         Utils.applyWindowInsets(
                 binding.nestedScrollView,
@@ -234,14 +247,10 @@ public class CreateTorrentFragment extends Fragment {
 
         viewModel.getState().observe(getViewLifecycleOwner(), (state) -> {
             if (state.status == CreateTorrentViewModel.BuildState.Status.BUILDING) {
-                Snackbar.make(
-                        activity,
-                        binding.coordinatorLayout,
-                        getString(R.string.creating_torrent_progress),
-                        Snackbar.LENGTH_LONG
-                ).show();
+                showCreatingDialog();
                 binding.createButton.setEnabled(false);
             } else {
+                dismissCreatingDialog();
                 binding.createButton.setEnabled(true);
             }
 
@@ -251,6 +260,8 @@ public class CreateTorrentFragment extends Fragment {
                 handleBuildError(state.err);
             }
         });
+
+        viewModel.getBuildProgress().observe(getViewLifecycleOwner(), this::updateCreatingDialogProgress);
 
         binding.createButton.setOnClickListener((v) -> {
             if (TextUtils.isEmpty(viewModel.mutableParams.getSeedPathName()) || "null".equals(viewModel.mutableParams.getSeedPathName())) {
@@ -356,6 +367,40 @@ public class CreateTorrentFragment extends Fragment {
                 .setMessage(e.getMessage())
                 .setPositiveButton(R.string.ok, ((dialog, which) -> dialog.dismiss()))
                 .show();
+    }
+
+    private void showCreatingDialog() {
+        if (!isAdded() || (creatingDialog != null && creatingDialog.isShowing())) {
+            return;
+        }
+
+        creatingDialogBinding = DialogCreatingTorrentBinding.inflate(getLayoutInflater());
+        creatingDialog = new MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.create_torrent)
+                .setView(creatingDialogBinding.getRoot())
+                .setCancelable(false)
+                .show();
+        updateCreatingDialogProgress(viewModel.getBuildProgress().getValue());
+    }
+
+    private void updateCreatingDialogProgress(@Nullable Integer progress) {
+        if (creatingDialogBinding == null) {
+            return;
+        }
+
+        int value = progress != null ? Math.max(0, Math.min(100, progress)) : 0;
+        creatingDialogBinding.progressBar.setProgressCompat(value, true);
+        creatingDialogBinding.progressText.setText(String.format(Locale.getDefault(), "%d%%", value));
+    }
+
+    private void dismissCreatingDialog() {
+        if (creatingDialog != null) {
+            if (creatingDialog.isShowing()) {
+                creatingDialog.dismiss();
+            }
+            creatingDialog = null;
+        }
+        creatingDialogBinding = null;
     }
 
     private void errorReportDialog(Throwable e) {
