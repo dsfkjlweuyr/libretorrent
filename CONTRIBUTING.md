@@ -23,7 +23,7 @@ Make sure that all existing and new tests are passing.
 
 ## 📋 Coding Guidelines
 
- - Keep it snimple snupid: [KISS](https://en.wikipedia.org/wiki/KISS_principle)
+ - Keep it simple, stupid: [KISS](https://en.wikipedia.org/wiki/KISS_principle)
  - No repeating yourself. [Re-use your own code and that of others](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
  - If you want to help, triaging and keeping up with the issue and TODO list is great.
  - Try to follow our coding style and formatting before submitting a patch.
